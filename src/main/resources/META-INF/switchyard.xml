@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sy:switchyard xmlns:bean="urn:switchyard-component-bean:config:1.1" xmlns:camel="urn:switchyard-component-camel:config:1.1" xmlns:jms="urn:switchyard-component-camel-jms:config:1.1" xmlns:resteasy="urn:switchyard-component-resteasy:config:1.1" xmlns:sca="http://docs.oasis-open.org/ns/opencsa/sca/200912" xmlns:sy="urn:switchyard-config:switchyard:1.1" name="ejb-logger" targetNamespace="urn:hys:ejb-logger">
+  <sca:composite name="ejb-logger" targetNamespace="urn:hys:ejb-logger:1.0">
+    <sca:component name="LoggingServiceBean">
+      <bean:implementation.bean class="hys.ejb_logger.logging.LoggingServiceBean"/>
+      <sca:service name="LoggingService">
+        <sca:interface.java interface="hys.ejb_logger.logging.LoggingService"/>
+      </sca:service>
+    </sca:component>
+    <sca:service name="LoggingService" promote="LoggingServiceBean/LoggingService">
+      <sca:interface.java interface="hys.ejb_logger.logging.LoggingService"/>
+      <resteasy:binding.rest name="LoggingBinding">
+        <resteasy:interfaces>hys.ejb_logger.logging.LoggingResource</resteasy:interfaces>
+        <resteasy:contextPath>log</resteasy:contextPath>
+      </resteasy:binding.rest>
+    </sca:service>
+    <sca:component name="MessagePersistanceServiceRoute">
+      <camel:implementation.camel>
+        <camel:java class="hys.ejb_logger.persistance.MessagePersistanceServiceRoute"/>
+      </camel:implementation.camel>
+      <sca:service name="MessagePersistanceService">
+        <sca:interface.java interface="hys.ejb_logger.persistance.MessagePersistanceService"/>
+      </sca:service>
+      <sca:reference name="PersistanceRef">
+        <sy:interface.esb inputType="hys.ejb_logger.persistance.MessageRequest" outputType="java:hys.ejb_logger.persistance.Message"/>
+      </sca:reference>
+    </sca:component>
+    <sca:service name="MessagePersistanceService" promote="MessagePersistanceServiceRoute/MessagePersistanceService">
+      <sca:interface.java interface="hys.ejb_logger.persistance.MessagePersistanceService"/>
+      <resteasy:binding.rest name="rest1">
+        <resteasy:interfaces>hys.ejb_logger.persistance.MessagePersistanceResource</resteasy:interfaces>
+        <resteasy:contextPath>log</resteasy:contextPath>
+      </resteasy:binding.rest>
+    </sca:service>
+    <sca:reference name="PersistanceRef" multiplicity="0..1" promote="MessagePersistanceServiceRoute/PersistanceRef">
+      <sy:interface.esb inputType="hys.ejb_logger.persistance.MessageRequest" outputType="java:hys.ejb_logger.persistance.Message"/>
+      <jms:binding.jms name="jms1">
+        <jms:queue>PersistanceQuery</jms:queue>
+        <jms:connectionFactory>#ConnectionFactory</jms:connectionFactory>
+      </jms:binding.jms>
+    </sca:reference>
+    <sca:component name="PersistanceConsumerRoute">
+      <camel:implementation.camel>
+        <camel:java class="hys.ejb_logger.persistance.PersistanceConsumerRoute"/>
+      </camel:implementation.camel>
+      <sca:service name="PersistanceConsumer">
+        <sy:interface.esb inputType="java:hys.ejb_logger.persistance.MessageRequest" outputType="java:hys.ejb_logger.persistance.Message"/>
+      </sca:service>
+      <sca:reference name="MessageDAOService">
+        <sca:interface.java interface="hys.ejb_logger.persistance.MessageDAOService"/>
+      </sca:reference>
+    </sca:component>
+    <sca:service name="PersistanceConsumer" promote="PersistanceConsumerRoute/PersistanceConsumer">
+      <sy:interface.esb inputType="java:hys.ejb_logger.persistance.MessageRequest" outputType="java:hys.ejb_logger.persistance.Message"/>
+      <jms:binding.jms name="jms1">
+        <jms:queue>PersistanceQuery</jms:queue>
+        <jms:connectionFactory>#ConnectionFactory</jms:connectionFactory>
+      </jms:binding.jms>
+    </sca:service>
+    <sca:component name="MessageDAOServiceBean">
+      <bean:implementation.bean class="hys.ejb_logger.persistance.MessageDAOServiceBean"/>
+      <sca:service name="MessageDAOService">
+        <sca:interface.java interface="hys.ejb_logger.persistance.MessageDAOService"/>
+      </sca:service>
+    </sca:component>
+  </sca:composite>
+</sy:switchyard>
